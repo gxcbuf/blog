@@ -7,9 +7,20 @@ categories:
 - 源码阅读
 ---
 
-​	Redis中自定义了简单动态字符串，兼容传统C字符串，并提供了一些高效、安全的方法，用于Redis键值对中需要字符串的存储。除了一些日志输出的字面量外，其余需要修改的字符串都以sds作为存储。
+​Redis中自定义了简单动态字符串，兼容传统C字符串，并提供了一些高效、安全的方法，用于Redis键值对中需要字符串的存储。除了一些日志输出的字面量外，其余需要修改的字符串都以sds作为存储。
 
 ### 1. 定义
+
+```c
+typedef char* sds;
+
+struct sdshdr64 {
+    uint64_t len;		// 使用的大小
+    uint64_t alloc;     // 分配的大小，不包括头部和空字符
+    unsigned char flags;// 低3位用于表示header类型，其余5位未使用
+    char buf[];
+}
+```
 
 sds是char *的别名，指向了存储字符串数组的首地址。
 
@@ -104,7 +115,7 @@ struct __attribute__ ((__packed__)) sdshdr64 {
 - 空间预分配，字符串拼接时内存空间不够
 
   - newlen*2 > SDS_MAX_PREALLOC(1MB)，则分配1MB内存空间
-  - newlen*2 < SDS_MAX_PREALLOC, 则分配newlen * 2的内存空间
+  - newlen*2 < SDS_MAX_PREALLOC, 则分配newlen两倍的内存空间
 
   若长度改变未导致sdshdr头部类型改变，则需要扩展内存空间大小，否则需要重新分配所有内存，将原有数据拷贝，再释放内存空间。
 
